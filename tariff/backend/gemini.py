@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from google import genai
 import os
 import json
@@ -9,6 +10,7 @@ load_dotenv()
 
 # Initialize the Flask app
 app = Flask(__name__)
+# CORS(app)
 
 # Initialize the Gemini AI client
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -46,15 +48,20 @@ def calculate_import_price(query):
     )
     return response.text
 
+# / = hello world
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
+
 # API endpoint for the frontend
 @app.route('/gemini', methods=['POST'])
 def gemini_endpoint():
     data = request.json
-    query = data.get("query")
-    if not query:
+    if not data or "query" not in data:
         return jsonify({"error": "Query is required"}), 400
+    query = data["query"]
     result = calculate_import_price(query)
     return jsonify({"result": result})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
