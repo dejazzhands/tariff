@@ -10,7 +10,7 @@ load_dotenv()
 
 # Initialize the Flask app
 app = Flask(__name__)
-# CORS(app)
+CORS(app)
 
 # Initialize the Gemini AI client
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
