@@ -4,29 +4,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import React, { useState, useEffect } from 'react';
+import {useRouter} from 'next/navigation';
 
 // Simulated API for commodities
-async function fetchTrendingCommodities() {
-  try {
-    const response = await fetch("https://localhost:5000/usda/top-exports-json");
-    const data = await response.json();
+// async function fetchTrendingCommodities() {
+//   try {
+//     const response = await fetch("https://localhost:5000/usda/top-exports-json");
+//     const data = await response.json();
 
-    if (data.status === "success") {
-      return data.data.map((item) => ({
-        name: item.name,
-        price: parseFloat(item.value.toFixed(2)), // value is price
-      }));
-    } else {
-      console.error("Error fetching commodities:", data.message);
-      return [];
-    }
-  } catch (err) {
-    console.error("Failed to fetch from backend:", err);
-    return [];
-  }
-}
-
-
+//     if (data.status === "success") {
+//       return data.data.map((item) => ({
+//         name: item.name,
+//         price: parseFloat(item.value.toFixed(2)), // value is price
+//       }));
+//     } else {
+//       console.error("Error fetching commodities:", data.message);
+//       return [];
+//     }
+//   } catch (err) {
+//     console.error("Failed to fetch from backend:", err);
+//     return [];
+//   }
+// }
 
 
 
@@ -36,21 +35,46 @@ async function fetchTrendingCommodities() {
 export default function Search() {
 
     const [userInput, setUserInput] = useState('');
-    const [geminiResponse, setGeminiResponse] = useState('');
+    const router = useRouter();
   
-    // 🔁 Load trending commodities on page load
-    useEffect(() => {
-      fetchTrendingCommodities().then(setTrending);
-    }, []);
+
+    // useEffect(() => {
+    //   fetchTrendingCommodities().then(setTrending);
+    // }, []);
   
-    // 🔍 Handle form submission
+    //handle submission for gemini
     const handleSubmit = async (e) => {
       e.preventDefault();
-      const response = await fetchGeminiResponse(userInput);
-      setGeminiResponse(response);
+    
+      try {
+        // Send the user query to the backend
+        const response = await fetch('http://127.0.0.1:5000/gemini', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: userInput }),
+        });
+    
+        if (!response.ok) {
+            throw new Error('Failed to fetch the response from the backend');
+        }
+    
+        const data = await response.json();
+    
+        // Navigate to a new page with the response
+        router.push({
+            pathname: '/result',
+            query: { response: JSON.stringify(data.result) },
+        });
+      } 
+      catch (error) {
+          console.error('Error:', error.message);
+      }
     };
+    
 
-    // default value before plumbing with API
+    // default value before plumbing with API for trending commodities
     const [trending, setTrending] = React.useState([
         { name: "Wheat", price: 231.42 },
         { name: "Soybeans", price: 318.29 },
@@ -73,14 +97,27 @@ export default function Search() {
 
       <main className="flex flex-col gap-[40px] row-start-2 items-center sm:items-start">
     
-
+{/* 
           <div className="grid w-full max-w-md items-center gap-2 scale-140">
             <Label htmlFor="search">What produce would you like to buy?</Label>
             <form method="GET" action="/search" className="flex w-full max-w-sm items-center space-x-2">
               <Input type="text" placeholder="I'm importing 100 kilograms of avocado from Mexico" />
               <Button type="submit">Search</Button>
             </form>
-          </div>
+          </div> */}
+
+          <div className="grid w-full max-w-md items-center gap-2 scale-140">
+                    <Label htmlFor="search">What produce would you like to buy?</Label>
+                    <form onSubmit={handleSubmit} className="flex w-full max-w-sm items-center space-x-2">
+                        <Input
+                            type="text"
+                            placeholder="I'm importing 100 kilograms of avocado from Mexico"
+                            value={userInput}
+                            onChange={(e) => setUserInput(e.target.value)}
+                        />
+                        <Button type="submit">Search</Button>
+                    </form>
+        </div>
 
         <div>
             <h2 className="text-xl font-bold mb-4">Trending Commodities</h2>
